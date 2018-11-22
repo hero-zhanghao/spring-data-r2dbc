@@ -19,6 +19,9 @@ import io.r2dbc.spi.ConnectionFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.sql.DataSource;
+
+import org.junit.ClassRule;
 import org.junit.runner.RunWith;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.Configuration;
@@ -27,6 +30,7 @@ import org.springframework.data.r2dbc.config.AbstractR2dbcConfiguration;
 import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
 import org.springframework.data.r2dbc.repository.query.Query;
 import org.springframework.data.r2dbc.repository.support.R2dbcRepositoryFactory;
+import org.springframework.data.r2dbc.testing.ExternalDatabase;
 import org.springframework.data.r2dbc.testing.PostgresTestSupport;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -40,6 +44,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 @ContextConfiguration
 public class PostgresR2dbcRepositoryIntegrationTests extends AbstractR2dbcRepositoryIntegrationTests {
 
+	@ClassRule public static final ExternalDatabase database = PostgresTestSupport.database();
+
 	@Configuration
 	@EnableR2dbcRepositories(considerNestedRepositories = true,
 			includeFilters = @Filter(classes = PostgresLegoSetRepository.class, type = FilterType.ASSIGNABLE_TYPE))
@@ -47,8 +53,18 @@ public class PostgresR2dbcRepositoryIntegrationTests extends AbstractR2dbcReposi
 
 		@Override
 		public ConnectionFactory connectionFactory() {
-			return createConnectionFactory();
+			return PostgresTestSupport.createConnectionFactory(database);
 		}
+	}
+
+	@Override
+	protected DataSource createDataSource() {
+		return PostgresTestSupport.createDataSource(database);
+	}
+
+	@Override
+	protected ConnectionFactory createConnectionFactory() {
+		return PostgresTestSupport.createConnectionFactory(database);
 	}
 
 	@Override

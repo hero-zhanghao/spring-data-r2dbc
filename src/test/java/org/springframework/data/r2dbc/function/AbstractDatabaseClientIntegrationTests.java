@@ -23,6 +23,8 @@ import lombok.Data;
 import reactor.core.publisher.Hooks;
 import reactor.test.StepVerifier;
 
+import javax.sql.DataSource;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.dao.DuplicateKeyException;
@@ -54,6 +56,20 @@ public abstract class AbstractDatabaseClientIntegrationTests extends R2dbcIntegr
 		jdbc.execute(getCreateTableStatement());
 		jdbc.execute("DELETE FROM legoset");
 	}
+
+	/**
+	 * Creates a {@link DataSource} to be used in this test.
+	 *
+	 * @return the {@link DataSource} to be used in this test.
+	 */
+	protected abstract DataSource createDataSource();
+
+	/**
+	 * Creates a {@link ConnectionFactory} to be used in this test.
+	 *
+	 * @return the {@link ConnectionFactory} to be used in this test.
+	 */
+	protected abstract ConnectionFactory createConnectionFactory();
 
 	/**
 	 * Returns the the CREATE TABLE statement for table {@code legoset} with the following three columns:

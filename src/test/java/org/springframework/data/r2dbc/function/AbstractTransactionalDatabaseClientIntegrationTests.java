@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 
+import javax.sql.DataSource;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.data.r2dbc.testing.R2dbcIntegrationTestSupport;
@@ -56,6 +58,20 @@ public abstract class AbstractTransactionalDatabaseClientIntegrationTests extend
 		jdbc.execute(getCreateTableStatement());
 		jdbc.execute("DELETE FROM legoset");
 	}
+
+	/**
+	 * Creates a {@link DataSource} to be used in this test.
+	 *
+	 * @return the {@link DataSource} to be used in this test.
+	 */
+	protected abstract DataSource createDataSource();
+
+	/**
+	 * Creates a {@link ConnectionFactory} to be used in this test.
+	 *
+	 * @return the {@link ConnectionFactory} to be used in this test.
+	 */
+	protected abstract ConnectionFactory createConnectionFactory();
 
 	/**
 	 * Returns the the CREATE TABLE statement for table {@code legoset} with the following three columns:

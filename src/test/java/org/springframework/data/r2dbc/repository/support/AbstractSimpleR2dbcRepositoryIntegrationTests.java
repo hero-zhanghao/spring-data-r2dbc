@@ -29,6 +29,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
+import javax.sql.DataSource;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,6 +82,13 @@ public abstract class AbstractSimpleR2dbcRepositoryIntegrationTests extends R2db
 
 		this.jdbc.execute(getCreateTableStatement());
 	}
+
+	/**
+	 * Creates a {@link DataSource} to be used in this test.
+	 *
+	 * @return the {@link DataSource} to be used in this test.
+	 */
+	protected abstract DataSource createDataSource();
 
 	/**
 	 * Returns the the CREATE TABLE statement for table {@code legoset} with the following three columns:

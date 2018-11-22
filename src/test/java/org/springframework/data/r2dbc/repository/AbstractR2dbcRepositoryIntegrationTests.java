@@ -17,6 +17,7 @@ package org.springframework.data.r2dbc.repository;
 
 import static org.assertj.core.api.Assertions.*;
 
+import io.r2dbc.spi.ConnectionFactory;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -28,6 +29,8 @@ import reactor.test.StepVerifier;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+
+import javax.sql.DataSource;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -71,6 +74,20 @@ public abstract class AbstractR2dbcRepositoryIntegrationTests extends R2dbcInteg
 
 		this.jdbc.execute(getCreateTableStatement());
 	}
+
+	/**
+	 * Creates a {@link DataSource} to be used in this test.
+	 *
+	 * @return the {@link DataSource} to be used in this test.
+	 */
+	protected abstract DataSource createDataSource();
+
+	/**
+	 * Creates a {@link ConnectionFactory} to be used in this test.
+	 *
+	 * @return the {@link ConnectionFactory} to be used in this test.
+	 */
+	protected abstract ConnectionFactory createConnectionFactory();
 
 	/**
 	 * Returns the the CREATE TABLE statement for table {@code legoset} with the following three columns:
