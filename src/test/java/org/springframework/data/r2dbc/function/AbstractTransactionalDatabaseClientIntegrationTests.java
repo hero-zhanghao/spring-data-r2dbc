@@ -32,6 +32,7 @@ import javax.sql.DataSource;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.r2dbc.testing.R2dbcIntegrationTestSupport;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.NoTransactionException;
@@ -55,6 +56,9 @@ public abstract class AbstractTransactionalDatabaseClientIntegrationTests extend
 		connectionFactory = createConnectionFactory();
 
 		jdbc = createJdbcTemplate(createDataSource());
+		try {
+			jdbc.execute("DROP TABLE legoset");
+		} catch (DataAccessException e) {}
 		jdbc.execute(getCreateTableStatement());
 		jdbc.execute("DELETE FROM legoset");
 	}
@@ -76,7 +80,7 @@ public abstract class AbstractTransactionalDatabaseClientIntegrationTests extend
 	/**
 	 * Returns the the CREATE TABLE statement for table {@code legoset} with the following three columns:
 	 * <ul>
-	 * <li>id integer (primary key), not null, auto-increment</li>
+	 * <li>id integer (primary key), not null</li>
 	 * <li>name varchar(255), nullable</li>
 	 * <li>manual integer, nullable</li>
 	 * </ul>
@@ -109,7 +113,7 @@ public abstract class AbstractTransactionalDatabaseClientIntegrationTests extend
 			return db.execute().sql(getInsertIntoLegosetStatement()) //
 					.bind(0, 42055) //
 					.bind(1, "SCHAUFELRADBAGGER") //
-					.bindNull("$3", Integer.class) //
+					.bindNull(2, Integer.class) //
 					.fetch().rowsUpdated();
 		});
 
@@ -128,7 +132,7 @@ public abstract class AbstractTransactionalDatabaseClientIntegrationTests extend
 		Mono<Integer> integerFlux = databaseClient.execute().sql(getInsertIntoLegosetStatement()) //
 				.bind(0, 42055) //
 				.bind(1, "SCHAUFELRADBAGGER") //
-				.bindNull("$3", Integer.class) //
+				.bindNull(2, Integer.class) //
 				.fetch().rowsUpdated();
 
 		integerFlux.as(StepVerifier::create) //
@@ -184,7 +188,7 @@ public abstract class AbstractTransactionalDatabaseClientIntegrationTests extend
 			return db.execute().sql(getInsertIntoLegosetStatement()) //
 					.bind(0, 42055) //
 					.bind(1, "SCHAUFELRADBAGGER") //
-					.bindNull("$3", Integer.class) //
+					.bindNull(2, Integer.class) //
 					.fetch().rowsUpdated().then(Mono.error(new IllegalStateException("failed")));
 		});
 
@@ -192,7 +196,8 @@ public abstract class AbstractTransactionalDatabaseClientIntegrationTests extend
 				.expectError(IllegalStateException.class) //
 				.verify();
 
-		assertThat(jdbc.queryForMap("SELECT count(*) FROM legoset")).containsEntry("count", 0L);
+		Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM legoset", Integer.class);
+		assertThat(count).isEqualTo(0);
 	}
 
 	@Test

@@ -27,6 +27,7 @@ import javax.sql.DataSource;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -53,8 +54,11 @@ public abstract class AbstractDatabaseClientIntegrationTests extends R2dbcIntegr
 		connectionFactory = createConnectionFactory();
 
 		jdbc = createJdbcTemplate(createDataSource());
+
+		try {
+			jdbc.execute("DROP TABLE legoset");
+		} catch (DataAccessException e) {}
 		jdbc.execute(getCreateTableStatement());
-		jdbc.execute("DELETE FROM legoset");
 	}
 
 	/**
@@ -74,7 +78,7 @@ public abstract class AbstractDatabaseClientIntegrationTests extends R2dbcIntegr
 	/**
 	 * Returns the the CREATE TABLE statement for table {@code legoset} with the following three columns:
 	 * <ul>
-	 * <li>id integer (primary key), not null, auto-increment</li>
+	 * <li>id integer (primary key), not null</li>
 	 * <li>name varchar(255), nullable</li>
 	 * <li>manual integer, nullable</li>
 	 * </ul>
@@ -98,7 +102,7 @@ public abstract class AbstractDatabaseClientIntegrationTests extends R2dbcIntegr
 		databaseClient.execute().sql(getInsertIntoLegosetStatement()) //
 				.bind(0, 42055) //
 				.bind(1, "SCHAUFELRADBAGGER") //
-				.bindNull("$3", Integer.class) //
+				.bindNull(2, Integer.class) //
 				.fetch().rowsUpdated() //
 				.as(StepVerifier::create) //
 				.expectNext(1) //
@@ -117,7 +121,7 @@ public abstract class AbstractDatabaseClientIntegrationTests extends R2dbcIntegr
 		databaseClient.execute().sql(getInsertIntoLegosetStatement()) //
 				.bind(0, 42055) //
 				.bind(1, "SCHAUFELRADBAGGER") //
-				.bindNull("$3", Integer.class) //
+				.bindNull(2, Integer.class) //
 				.fetch().rowsUpdated() //
 				.as(StepVerifier::create) //
 				.expectErrorSatisfies(exception -> {
@@ -157,9 +161,9 @@ public abstract class AbstractDatabaseClientIntegrationTests extends R2dbcIntegr
 				.value("name", "SCHAUFELRADBAGGER") //
 				.nullValue("manual", Integer.class) //
 				.exchange() //
-				.flatMapMany(it -> it.extract((r, m) -> r.get("id", Integer.class)).all()) //
+				.flatMapMany(FetchSpec::rowsUpdated) //
 				.as(StepVerifier::create) //
-				.expectNext(42055).verifyComplete();
+				.expectNext(1).verifyComplete();
 
 		assertThat(jdbc.queryForMap("SELECT id, name, manual FROM legoset")).containsEntry("id", 42055);
 	}
@@ -192,8 +196,9 @@ public abstract class AbstractDatabaseClientIntegrationTests extends R2dbcIntegr
 
 		databaseClient.insert().into(LegoSet.class)//
 				.using(legoSet).exchange() //
-				.flatMapMany(it -> it.extract((r, m) -> r.get("id", Integer.class)).all()).as(StepVerifier::create) //
-				.expectNext(42055).verifyComplete();
+				.flatMapMany(FetchSpec::rowsUpdated) //
+				.as(StepVerifier::create) //
+				.expectNext(1).verifyComplete();
 
 		assertThat(jdbc.queryForMap("SELECT id, name, manual FROM legoset")).containsEntry("id", 42055);
 	}

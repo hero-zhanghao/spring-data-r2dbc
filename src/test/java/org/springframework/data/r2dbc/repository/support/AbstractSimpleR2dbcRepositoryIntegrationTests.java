@@ -27,6 +27,7 @@ import reactor.test.StepVerifier;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import javax.sql.DataSource;
@@ -121,9 +122,10 @@ public abstract class AbstractSimpleR2dbcRepositoryIntegrationTests extends R2db
 	@Test
 	public void shouldUpdateObject() {
 
-		jdbc.execute("INSERT INTO legoset (id, name, manual) VALUES(42055, 'SCHAUFELRADBAGGER', 12)");
+		jdbc.execute("INSERT INTO legoset (name, manual) VALUES('SCHAUFELRADBAGGER', 12)");
+		Integer id = jdbc.queryForObject("SELECT id FROM legoset", Integer.class);
 
-		LegoSet legoSet = new LegoSet(42055, "SCHAUFELRADBAGGER", 12);
+		LegoSet legoSet = new LegoSet(id, "SCHAUFELRADBAGGER", 12);
 		legoSet.setManual(14);
 
 		repository.save(legoSet) //
@@ -152,8 +154,8 @@ public abstract class AbstractSimpleR2dbcRepositoryIntegrationTests extends R2db
 				.expectNext(15) //
 				.verifyComplete();
 
-		Map<String, Object> map = jdbc.queryForMap("SELECT COUNT(*) FROM legoset");
-		assertThat(map).containsEntry("count", 4L);
+		Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM legoset", Integer.class);
+		assertThat(count).isEqualTo(4);
 	}
 
 	@Test
@@ -167,20 +169,21 @@ public abstract class AbstractSimpleR2dbcRepositoryIntegrationTests extends R2db
 				.expectNextCount(2) //
 				.verifyComplete();
 
-		Map<String, Object> map = jdbc.queryForMap("SELECT COUNT(*) FROM legoset");
-		assertThat(map).containsEntry("count", 2L);
+		Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM legoset", Integer.class);
+		assertThat(count).isEqualTo(2);
 	}
 
 	@Test
 	public void shouldFindById() {
 
-		jdbc.execute("INSERT INTO legoset (id, name, manual) VALUES(42055, 'SCHAUFELRADBAGGER', 12)");
+		jdbc.execute("INSERT INTO legoset (name, manual) VALUES('SCHAUFELRADBAGGER', 12)");
+		Integer id = jdbc.queryForObject("SELECT id FROM legoset", Integer.class);
 
-		repository.findById(42055) //
+		repository.findById(id) //
 				.as(StepVerifier::create) //
 				.assertNext(actual -> {
 
-					assertThat(actual.getId()).isEqualTo(42055);
+					assertThat(actual.getId()).isEqualTo(id);
 					assertThat(actual.getName()).isEqualTo("SCHAUFELRADBAGGER");
 					assertThat(actual.getManual()).isEqualTo(12);
 				}).verifyComplete();
@@ -189,9 +192,10 @@ public abstract class AbstractSimpleR2dbcRepositoryIntegrationTests extends R2db
 	@Test
 	public void shouldExistsById() {
 
-		jdbc.execute("INSERT INTO legoset (id, name, manual) VALUES(42055, 'SCHAUFELRADBAGGER', 12)");
+		jdbc.execute("INSERT INTO legoset (name, manual) VALUES('SCHAUFELRADBAGGER', 12)");
+		Integer id = jdbc.queryForObject("SELECT id FROM legoset", Integer.class);
 
-		repository.existsById(42055) //
+		repository.existsById(id) //
 				.as(StepVerifier::create) //
 				.expectNext(true)//
 				.verifyComplete();
@@ -205,9 +209,10 @@ public abstract class AbstractSimpleR2dbcRepositoryIntegrationTests extends R2db
 	@Test
 	public void shouldExistsByIdPublisher() {
 
-		jdbc.execute("INSERT INTO legoset (id, name, manual) VALUES(42055, 'SCHAUFELRADBAGGER', 12)");
+		jdbc.execute("INSERT INTO legoset (name, manual) VALUES('SCHAUFELRADBAGGER', 12)");
+		Integer id = jdbc.queryForObject("SELECT id FROM legoset", Integer.class);
 
-		repository.existsById(Mono.just(42055)) //
+		repository.existsById(Mono.just(id)) //
 				.as(StepVerifier::create) //
 				.expectNext(true)//
 				.verifyComplete();
@@ -221,8 +226,8 @@ public abstract class AbstractSimpleR2dbcRepositoryIntegrationTests extends R2db
 	@Test
 	public void shouldFindByAll() {
 
-		jdbc.execute("INSERT INTO legoset (id, name, manual) VALUES(42055, 'SCHAUFELRADBAGGER', 12)");
-		jdbc.execute("INSERT INTO legoset (id, name, manual) VALUES(42064, 'FORSCHUNGSSCHIFF', 13)");
+		jdbc.execute("INSERT INTO legoset (name, manual) VALUES('SCHAUFELRADBAGGER', 12)");
+		jdbc.execute("INSERT INTO legoset (name, manual) VALUES('FORSCHUNGSSCHIFF', 13)");
 
 		repository.findAll() //
 				.map(LegoSet::getName) //
@@ -237,10 +242,12 @@ public abstract class AbstractSimpleR2dbcRepositoryIntegrationTests extends R2db
 	@Test
 	public void shouldFindAllByIdUsingIterable() {
 
-		jdbc.execute("INSERT INTO legoset (id, name, manual) VALUES(42055, 'SCHAUFELRADBAGGER', 12)");
-		jdbc.execute("INSERT INTO legoset (id, name, manual) VALUES(42064, 'FORSCHUNGSSCHIFF', 13)");
+		jdbc.execute("INSERT INTO legoset (name, manual) VALUES('SCHAUFELRADBAGGER', 12)");
+		jdbc.execute("INSERT INTO legoset (name, manual) VALUES('FORSCHUNGSSCHIFF', 13)");
 
-		repository.findAllById(Arrays.asList(42055, 42064)) //
+		List<Integer> ids = jdbc.queryForList("SELECT id FROM legoset", Integer.class);
+
+		repository.findAllById(ids) //
 				.map(LegoSet::getName) //
 				.collectList() //
 				.as(StepVerifier::create) //
@@ -253,10 +260,12 @@ public abstract class AbstractSimpleR2dbcRepositoryIntegrationTests extends R2db
 	@Test
 	public void shouldFindAllByIdUsingPublisher() {
 
-		jdbc.execute("INSERT INTO legoset (id, name, manual) VALUES(42055, 'SCHAUFELRADBAGGER', 12)");
-		jdbc.execute("INSERT INTO legoset (id, name, manual) VALUES(42064, 'FORSCHUNGSSCHIFF', 13)");
+		jdbc.execute("INSERT INTO legoset (name, manual) VALUES('SCHAUFELRADBAGGER', 12)");
+		jdbc.execute("INSERT INTO legoset (name, manual) VALUES('FORSCHUNGSSCHIFF', 13)");
 
-		repository.findAllById(Flux.just(42055, 42064)) //
+		List<Integer> ids = jdbc.queryForList("SELECT id FROM legoset", Integer.class);
+
+		repository.findAllById(Flux.fromIterable(ids)) //
 				.map(LegoSet::getName) //
 				.collectList() //
 				.as(StepVerifier::create) //
@@ -274,8 +283,8 @@ public abstract class AbstractSimpleR2dbcRepositoryIntegrationTests extends R2db
 				.expectNext(0L) //
 				.verifyComplete();
 
-		jdbc.execute("INSERT INTO legoset (id, name, manual) VALUES(42055, 'SCHAUFELRADBAGGER', 12)");
-		jdbc.execute("INSERT INTO legoset (id, name, manual) VALUES(42064, 'FORSCHUNGSSCHIFF', 13)");
+		jdbc.execute("INSERT INTO legoset (name, manual) VALUES('SCHAUFELRADBAGGER', 12)");
+		jdbc.execute("INSERT INTO legoset (name, manual) VALUES('FORSCHUNGSSCHIFF', 13)");
 
 		repository.count() //
 				.as(StepVerifier::create) //
@@ -286,72 +295,77 @@ public abstract class AbstractSimpleR2dbcRepositoryIntegrationTests extends R2db
 	@Test
 	public void shouldDeleteById() {
 
-		jdbc.execute("INSERT INTO legoset (id, name, manual) VALUES(42055, 'SCHAUFELRADBAGGER', 12)");
+		jdbc.execute("INSERT INTO legoset (name, manual) VALUES('SCHAUFELRADBAGGER', 12)");
+		Integer id = jdbc.queryForObject("SELECT id FROM legoset", Integer.class);
 
-		repository.deleteById(42055) //
+		repository.deleteById(id) //
 				.as(StepVerifier::create) //
 				.verifyComplete();
 
-		Map<String, Object> map = jdbc.queryForMap("SELECT COUNT(*) FROM legoset");
-		assertThat(map).containsEntry("count", 0L);
+		Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM legoset", Integer.class);
+		assertThat(count).isEqualTo(0);
 	}
 
 	@Test
 	public void shouldDeleteByIdPublisher() {
 
-		jdbc.execute("INSERT INTO legoset (id, name, manual) VALUES(42055, 'SCHAUFELRADBAGGER', 12)");
+		jdbc.execute("INSERT INTO legoset (name, manual) VALUES('SCHAUFELRADBAGGER', 12)");
+		Integer id = jdbc.queryForObject("SELECT id FROM legoset", Integer.class);
 
-		repository.deleteById(Mono.just(42055)) //
+		repository.deleteById(Mono.just(id)) //
 				.as(StepVerifier::create) //
 				.verifyComplete();
 
-		Map<String, Object> map = jdbc.queryForMap("SELECT COUNT(*) FROM legoset");
-		assertThat(map).containsEntry("count", 0L);
+		Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM legoset", Integer.class);
+		assertThat(count).isEqualTo(0);
 	}
 
 	@Test
 	public void shouldDelete() {
 
-		jdbc.execute("INSERT INTO legoset (id, name, manual) VALUES(42055, 'SCHAUFELRADBAGGER', 12)");
+		jdbc.execute("INSERT INTO legoset (name, manual) VALUES('SCHAUFELRADBAGGER', 12)");
+		Integer id = jdbc.queryForObject("SELECT id FROM legoset", Integer.class);
 
-		LegoSet legoSet = new LegoSet(42055, "SCHAUFELRADBAGGER", 12);
+		LegoSet legoSet = new LegoSet(id, "SCHAUFELRADBAGGER", 12);
 
 		repository.delete(legoSet) //
 				.as(StepVerifier::create) //
 				.verifyComplete();
 
-		Map<String, Object> map = jdbc.queryForMap("SELECT COUNT(*) FROM legoset");
-		assertThat(map).containsEntry("count", 0L);
+		Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM legoset", Integer.class);
+		assertThat(count).isEqualTo(0);
 	}
 
 	@Test
 	public void shouldDeleteAllUsingIterable() {
 
-		jdbc.execute("INSERT INTO legoset (id, name, manual) VALUES(42055, 'SCHAUFELRADBAGGER', 12)");
+		jdbc.execute("INSERT INTO legoset (name, manual) VALUES('SCHAUFELRADBAGGER', 12)");
+		Integer id = jdbc.queryForObject("SELECT id FROM legoset", Integer.class);
 
-		LegoSet legoSet = new LegoSet(42055, "SCHAUFELRADBAGGER", 12);
+		LegoSet legoSet = new LegoSet(id, "SCHAUFELRADBAGGER", 12);
 
 		repository.deleteAll(Collections.singletonList(legoSet)) //
 				.as(StepVerifier::create) //
 				.verifyComplete();
 
-		Map<String, Object> map = jdbc.queryForMap("SELECT COUNT(*) FROM legoset");
-		assertThat(map).containsEntry("count", 0L);
+		Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM legoset", Integer.class);
+		assertThat(count).isEqualTo(0);
 	}
 
 	@Test
 	public void shouldDeleteAllUsingPublisher() {
 
-		jdbc.execute("INSERT INTO legoset (id, name, manual) VALUES(42055, 'SCHAUFELRADBAGGER', 12)");
+		jdbc.execute("INSERT INTO legoset (name, manual) VALUES('SCHAUFELRADBAGGER', 12)");
+		Integer id = jdbc.queryForObject("SELECT id FROM legoset", Integer.class);
 
-		LegoSet legoSet = new LegoSet(42055, "SCHAUFELRADBAGGER", 12);
+		LegoSet legoSet = new LegoSet(id, "SCHAUFELRADBAGGER", 12);
 
 		repository.deleteAll(Mono.just(legoSet)) //
 				.as(StepVerifier::create) //
 				.verifyComplete();
 
-		Map<String, Object> map = jdbc.queryForMap("SELECT COUNT(*) FROM legoset");
-		assertThat(map).containsEntry("count", 0L);
+		Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM legoset", Integer.class);
+		assertThat(count).isEqualTo(0);
 	}
 
 	@Data

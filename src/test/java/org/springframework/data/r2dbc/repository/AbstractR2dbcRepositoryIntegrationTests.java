@@ -37,7 +37,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.r2dbc.dialect.PostgresDialect;
+import org.springframework.data.r2dbc.dialect.Database;
 import org.springframework.data.r2dbc.function.DefaultReactiveDataAccessStrategy;
 import org.springframework.data.r2dbc.function.TransactionalDatabaseClient;
 import org.springframework.data.r2dbc.repository.support.R2dbcRepositoryFactory;
@@ -159,8 +159,9 @@ public abstract class AbstractR2dbcRepositoryIntegrationTests extends R2dbcInteg
 	@Test
 	public void shouldInsertItemsTransactional() {
 
+		Database database = Database.findDatabase(createConnectionFactory()).get();
 		DefaultReactiveDataAccessStrategy dataAccessStrategy = new DefaultReactiveDataAccessStrategy(
-				PostgresDialect.INSTANCE, new BasicRelationalConverter(mappingContext));
+				database.latestDialect(), new BasicRelationalConverter(mappingContext));
 		TransactionalDatabaseClient client = TransactionalDatabaseClient.builder()
 				.connectionFactory(createConnectionFactory()).dataAccessStrategy(dataAccessStrategy).build();
 

@@ -22,6 +22,7 @@ import reactor.core.publisher.Mono;
 import javax.sql.DataSource;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.Configuration;
@@ -31,56 +32,60 @@ import org.springframework.data.r2dbc.repository.config.EnableR2dbcRepositories;
 import org.springframework.data.r2dbc.repository.query.Query;
 import org.springframework.data.r2dbc.repository.support.R2dbcRepositoryFactory;
 import org.springframework.data.r2dbc.testing.ExternalDatabase;
-import org.springframework.data.r2dbc.testing.PostgresTestSupport;
+import org.springframework.data.r2dbc.testing.SqlServerTestSupport;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 /**
- * Integration tests for {@link LegoSetRepository} using {@link R2dbcRepositoryFactory} against Postgres.
+ * Integration tests for {@link LegoSetRepository} using {@link R2dbcRepositoryFactory} against Microsoft SQL Server.
  *
  * @author Mark Paluch
  */
 @RunWith(SpringRunner.class)
 @ContextConfiguration
-public class PostgresR2dbcRepositoryIntegrationTests extends AbstractR2dbcRepositoryIntegrationTests {
+public class SqlServerR2dbcRepositoryIntegrationTests extends AbstractR2dbcRepositoryIntegrationTests {
 
-	@ClassRule public static final ExternalDatabase database = PostgresTestSupport.database();
+	@ClassRule public static final ExternalDatabase database = SqlServerTestSupport.database();
 
 	@Configuration
 	@EnableR2dbcRepositories(considerNestedRepositories = true,
-			includeFilters = @Filter(classes = PostgresLegoSetRepository.class, type = FilterType.ASSIGNABLE_TYPE))
+			includeFilters = @Filter(classes = SqlServerLegoSetRepository.class, type = FilterType.ASSIGNABLE_TYPE))
 	static class IntegrationTestConfiguration extends AbstractR2dbcConfiguration {
 
 		@Override
 		public ConnectionFactory connectionFactory() {
-			return PostgresTestSupport.createConnectionFactory(database);
+			return SqlServerTestSupport.createConnectionFactory(database);
 		}
 	}
 
 	@Override
 	protected DataSource createDataSource() {
-		return PostgresTestSupport.createDataSource(database);
+		return SqlServerTestSupport.createDataSource(database);
 	}
 
 	@Override
 	protected ConnectionFactory createConnectionFactory() {
-		return PostgresTestSupport.createConnectionFactory(database);
+		return SqlServerTestSupport.createConnectionFactory(database);
 	}
 
 	@Override
 	protected String getCreateTableStatement() {
-		return PostgresTestSupport.CREATE_TABLE_LEGOSET_WITH_ID_GENERATION;
+		return SqlServerTestSupport.CREATE_TABLE_LEGOSET_WITH_ID_GENERATION;
 	}
 
 	@Override
 	protected Class<? extends LegoSetRepository> getRepositoryInterfaceType() {
-		return PostgresLegoSetRepository.class;
+		return SqlServerLegoSetRepository.class;
 	}
 
-	interface PostgresLegoSetRepository extends LegoSetRepository {
+	@Ignore("SQL server locks a SELECT COUNT so we cannot proceed.")
+	@Override
+	public void shouldInsertItemsTransactional() {}
+
+	interface SqlServerLegoSetRepository extends LegoSetRepository {
 
 		@Override
-		@Query("SELECT * FROM legoset WHERE name like $1")
+		@Query("SELECT * FROM legoset WHERE name like @name")
 		Flux<LegoSet> findByNameContains(String name);
 
 		@Override
@@ -88,7 +93,7 @@ public class PostgresR2dbcRepositoryIntegrationTests extends AbstractR2dbcReposi
 		Flux<Named> findAsProjection();
 
 		@Override
-		@Query("SELECT * FROM legoset WHERE manual = $1")
+		@Query("SELECT * FROM legoset WHERE manual = @P0")
 		Mono<LegoSet> findByManual(int manual);
 	}
 }

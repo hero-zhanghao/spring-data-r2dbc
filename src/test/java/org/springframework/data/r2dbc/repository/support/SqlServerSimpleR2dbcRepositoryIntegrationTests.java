@@ -24,37 +24,37 @@ import org.junit.runner.RunWith;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.r2dbc.config.AbstractR2dbcConfiguration;
 import org.springframework.data.r2dbc.testing.ExternalDatabase;
-import org.springframework.data.r2dbc.testing.PostgresTestSupport;
+import org.springframework.data.r2dbc.testing.SqlServerTestSupport;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 /**
- * Integration tests for {@link SimpleR2dbcRepository} against Postgres.
+ * Integration tests for {@link SimpleR2dbcRepository} against Microsoft SQL Server.
  *
  * @author Mark Paluch
  */
 @RunWith(SpringRunner.class)
 @ContextConfiguration
-public class PostgresSimpleR2dbcRepositoryIntegrationTests extends AbstractSimpleR2dbcRepositoryIntegrationTests {
+public class SqlServerSimpleR2dbcRepositoryIntegrationTests extends AbstractSimpleR2dbcRepositoryIntegrationTests {
 
-	@ClassRule public static final ExternalDatabase database = PostgresTestSupport.database();
+	@ClassRule public static final ExternalDatabase database = SqlServerTestSupport.database();
 
 	@Configuration
 	static class IntegrationTestConfiguration extends AbstractR2dbcConfiguration {
 
 		@Override
 		public ConnectionFactory connectionFactory() {
-			return PostgresTestSupport.createConnectionFactory(database);
+			return SqlServerTestSupport.createConnectionFactory(database);
 		}
 	}
 
 	@Override
 	protected DataSource createDataSource() {
-		return PostgresTestSupport.createDataSource(database);
+		return SqlServerTestSupport.createDataSource(database);
 	}
 
 	@Override
 	protected String getCreateTableStatement() {
-		return PostgresTestSupport.CREATE_TABLE_LEGOSET_WITH_ID_GENERATION;
+		return SqlServerTestSupport.CREATE_TABLE_LEGOSET_WITH_ID_GENERATION;
 	}
 }
