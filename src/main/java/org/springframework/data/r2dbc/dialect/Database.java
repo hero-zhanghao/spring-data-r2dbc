@@ -50,7 +50,7 @@ public enum Database {
 
 		@Override
 		public Dialect latestDialect() {
-			return PostgresDialect.INSTANCE;
+			return H2Dialect.INSTANCE;
 		}
 	};
 
