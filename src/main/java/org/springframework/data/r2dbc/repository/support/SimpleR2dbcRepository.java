@@ -15,25 +15,25 @@
  */
 package org.springframework.data.r2dbc.repository.support;
 
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import org.reactivestreams.Publisher;
 import org.springframework.data.r2dbc.function.DatabaseClient;
 import org.springframework.data.r2dbc.function.DatabaseClient.BindSpec;
 import org.springframework.data.r2dbc.function.DatabaseClient.GenericExecuteSpec;
-import org.springframework.data.r2dbc.function.FetchSpec;
 import org.springframework.data.r2dbc.function.convert.MappingR2dbcConverter;
 import org.springframework.data.r2dbc.function.convert.SettableValue;
 import org.springframework.data.relational.repository.query.RelationalEntityInformation;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.util.Assert;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 /**
  * Simple {@link ReactiveCrudRepository} implementation using R2DBC through {@link DatabaseClient}.
@@ -60,8 +60,8 @@ public class SimpleR2dbcRepository<T, ID> implements ReactiveCrudRepository<T, I
 			return databaseClient.insert() //
 					.into(entity.getJavaType()) //
 					.using(objectToSave) //
-					.exchange() //
-					.flatMap(it -> it.extract(converter.populateIdIfNecessary(objectToSave)).one());
+					.map(converter.populateIdIfNecessary(objectToSave)) //
+					.one();
 		}
 
 		// TODO: Extract in some kind of SQL generator
@@ -87,8 +87,7 @@ public class SimpleR2dbcRepository<T, ID> implements ReactiveCrudRepository<T, I
 		}
 
 		return exec.as(entity.getJavaType()) //
-				.exchange() //
-				.flatMap(FetchSpec::rowsUpdated) //
+				.then() //
 				.thenReturn(objectToSave);
 	}
 
@@ -146,7 +145,6 @@ public class SimpleR2dbcRepository<T, ID> implements ReactiveCrudRepository<T, I
 				.as(entity.getJavaType()) //
 				.fetch() //
 				.one();
-
 	}
 
 	/* (non-Javadoc)
@@ -170,8 +168,9 @@ public class SimpleR2dbcRepository<T, ID> implements ReactiveCrudRepository<T, I
 				.sql(String.format("SELECT %s FROM %s WHERE %s = $1 LIMIT 1", getIdColumnName(), entity.getTableName(),
 						getIdColumnName())) //
 				.bind("$1", id) //
-				.exchange() //
-				.flatMap(it -> it.extract((r, md) -> r).first()).hasElement();
+				.map((r, md) -> r) //
+				.first() //
+				.hasElement();
 	}
 
 	/* (non-Javadoc)
@@ -228,8 +227,8 @@ public class SimpleR2dbcRepository<T, ID> implements ReactiveCrudRepository<T, I
 
 		return databaseClient.execute()
 				.sql(String.format("SELECT COUNT(%s) FROM %s", getIdColumnName(), entity.getTableName())) //
-				.exchange() //
-				.flatMap(it -> it.extract((r, md) -> r.get(0, Long.class)).first()) //
+				.map((r, md) -> r.get(0, Long.class)) //
+				.first() //
 				.defaultIfEmpty(0L);
 
 	}
@@ -273,7 +272,6 @@ public class SimpleR2dbcRepository<T, ID> implements ReactiveCrudRepository<T, I
 	 * @see org.springframework.data.repository.reactive.ReactiveCrudRepository#delete(java.lang.Object)
 	 */
 	@Override
-	@SuppressWarnings("unchecked")
 	public Mono<Void> delete(T objectToDelete) {
 
 		Assert.notNull(objectToDelete, "Object to delete must not be null!");
@@ -296,7 +294,6 @@ public class SimpleR2dbcRepository<T, ID> implements ReactiveCrudRepository<T, I
 	 * @see org.springframework.data.repository.reactive.ReactiveCrudRepository#deleteAll(org.reactivestreams.Publisher)
 	 */
 	@Override
-	@SuppressWarnings("unchecked")
 	public Mono<Void> deleteAll(Publisher<? extends T> objectPublisher) {
 
 		Assert.notNull(objectPublisher, "The Object Publisher must not be null!");
@@ -314,7 +311,6 @@ public class SimpleR2dbcRepository<T, ID> implements ReactiveCrudRepository<T, I
 	public Mono<Void> deleteAll() {
 
 		return databaseClient.execute().sql(String.format("DELETE FROM %s", entity.getTableName())) //
-				.exchange() //
 				.then();
 	}
 

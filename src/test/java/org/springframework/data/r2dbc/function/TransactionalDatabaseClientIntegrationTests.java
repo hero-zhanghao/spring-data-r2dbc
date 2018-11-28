@@ -107,8 +107,7 @@ public class TransactionalDatabaseClientIntegrationTests extends R2dbcIntegratio
 		Queue<Long> transactionIds = new ArrayBlockingQueue<>(5);
 		TransactionalDatabaseClient databaseClient = TransactionalDatabaseClient.create(connectionFactory);
 
-		Flux<Long> txId = databaseClient.execute().sql("SELECT txid_current();").exchange()
-				.flatMapMany(it -> it.extract((r, md) -> r.get(0, Long.class)).all());
+		Flux<Long> txId = databaseClient.execute().sql("SELECT txid_current();").map((r, md) -> r.get(0, Long.class)).all();
 
 		Mono<Void> then = databaseClient.enableTransactionSynchronization(databaseClient.beginTransaction() //
 				.thenMany(txId.concatWith(txId).doOnNext(transactionIds::add)) //
@@ -165,8 +164,7 @@ public class TransactionalDatabaseClientIntegrationTests extends R2dbcIntegratio
 
 		Flux<Long> transactionIds = databaseClient.inTransaction(db -> {
 
-			Flux<Long> txId = db.execute().sql("SELECT txid_current();").exchange()
-					.flatMapMany(it -> it.extract((r, md) -> r.get(0, Long.class)).all());
+			Flux<Long> txId = db.execute().sql("SELECT txid_current();").map((r, md) -> r.get(0, Long.class)).all();
 			return txId.concatWith(txId);
 		});
 
